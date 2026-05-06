@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microservices Resilience Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 5px; }
+        #response { margin-top: 20px; padding: 10px; border: 1px solid #ccc; min-height: 50px; }
+    </style>
+</head>
+<body>
+    <h1>Démonstration des Patterns de Résilience</h1>
+    <p>Cliquez sur les boutons pour tester les appels API avec Circuit Breaker et Bulkhead.</p>
+    <button onclick="callApi(false)">Appel Normal</button>
+    <button onclick="callApi(true)">Appel avec Échec</button>
+    <div id="response"></div>
+
+    <script>
+        async function callApi(fail) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.textContent = 'Chargement...';
+            try {
+                const res = await fetch(`/api/call?fail=${fail}`);
+                const text = await res.text();
+                responseDiv.textContent = `Réponse: ${text}`;
+            } catch (error) {
+                responseDiv.textContent = `Erreur: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

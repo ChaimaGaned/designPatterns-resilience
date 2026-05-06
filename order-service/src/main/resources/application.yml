@@ -1,0 +1,64 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  application:
+    name: order-service
+
+# ─── Resilience4j Circuit Breaker ──────────────────────────────────
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-calls-in-half-open-state: 2
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        record-exceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - com.ecommerce.order.exception.PaymentServiceException
+    instances:
+      paymentService:
+        base-config: default
+        wait-duration-in-open-state: 15s
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+
+  # Retry config
+  retry:
+    instances:
+      paymentService:
+        max-attempts: 3
+        wait-duration: 500ms
+
+# ─── Actuator ──────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,circuitbreakerevents
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+
+# ─── External Services ─────────────────────────────────────────────
+payment:
+  service:
+    url: ${PAYMENT_API_URL:http://localhost:9090}
+    timeout: 5000
+
+# ─── Logging ───────────────────────────────────────────────────────
+logging:
+  level:
+    com.ecommerce: DEBUG
+    io.github.resilience4j: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss} [%thread] %-5level [%X{service}] %logger{36} - %msg%n"

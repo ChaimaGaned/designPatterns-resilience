@@ -1,0 +1,50 @@
+server:
+  port: ${SERVER_PORT:8082}
+
+spring:
+  application:
+    name: inventory-service
+
+# ─── Resilience4j Bulkhead ─────────────────────────────────────────
+resilience4j:
+  bulkhead:
+    configs:
+      default:
+        max-wait-duration: 100ms
+    instances:
+      # Bulkhead pour les lectures de stock (forte concurrence OK)
+      readStock:
+        max-concurrent-calls: 10
+        max-wait-duration: 50ms
+      # Bulkhead pour les réservations (concurrence restreinte — opération critique)
+      reserveStock:
+        max-concurrent-calls: 5
+        max-wait-duration: 0ms
+
+  # Thread-pool bulkhead pour opérations bloquantes
+  thread-pool-bulkhead:
+    instances:
+      inventoryDB:
+        max-thread-pool-size: 10
+        core-thread-pool-size: 5
+        queue-capacity: 20
+        keep-alive-duration: 20ms
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,bulkheads,bulkheadevents
+  endpoint:
+    health:
+      show-details: always
+  health:
+    bulkheads:
+      enabled: true
+
+logging:
+  level:
+    com.ecommerce: DEBUG
+    io.github.resilience4j: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss} [%thread] %-5level [%X{service}] %logger{36} - %msg%n"
